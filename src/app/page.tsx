@@ -18,7 +18,7 @@ function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl">💕</span>
-            <span className="text-xl font-bold text-black">
+            <span className="text-xl font-bold text-green-500">
               哄哄模拟器
             </span>
           </Link>
