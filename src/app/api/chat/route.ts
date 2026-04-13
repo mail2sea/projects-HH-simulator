@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
+import { aiService } from '@/lib/ai';
 import { Message, Option, Gender } from '@/types/game';
 
 // ⚠️ 关键实现要点：请求超时时间
@@ -122,11 +122,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 初始化 LLM 客户端
-    const config = new Config({ timeout: REQUEST_TIMEOUT });
-    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
-    const client = new LLMClient(config, customHeaders);
-
     // 构建系统提示词
     const systemPrompt = buildSystemPrompt(gender, scenario, affection, step, isGameOver, won);
 
@@ -141,9 +136,10 @@ export async function POST(request: NextRequest) {
       ...conversationHistory,
     ];
 
-    // 调用 LLM
-    const response = await client.invoke(llmMessages, {
+    // 调用 AI 服务
+    const response = await aiService.invoke(llmMessages, {
       temperature: 0.9, // 高温度增加创意性
+      timeout: REQUEST_TIMEOUT
     });
 
     // 解析响应
@@ -180,8 +176,27 @@ export async function POST(request: NextRequest) {
       // 降级：返回默认响应
       return NextResponse.json(getDefaultResponse(step));
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat API error:', error);
+    
+    // 错误分类处理
+    if (error.type === 'AuthenticationError') {
+      return NextResponse.json(
+        { error: 'Authentication failed: Invalid API key' },
+        { status: 401 }
+      );
+    } else if (error.type === 'RateLimitError') {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded, please try again later' },
+        { status: 429 }
+      );
+    } else if (error.type === 'ServerError') {
+      return NextResponse.json(
+        { error: 'Server error, please try again later' },
+        { status: 500 }
+      );
+    }
+    
     // 降级：返回默认响应
     return NextResponse.json(getDefaultResponse(1));
   }

@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
+import { aiService } from '@/lib/ai';
 import { query } from '@/storage/database/postgres-client';
 
 // 生成新文章
 export async function POST(request: NextRequest) {
   try {
-    // 初始化 LLM 客户端
-    const config = new Config({ timeout: 30000 });
-    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
-    const client = new LLMClient(config, customHeaders);
-
     // 构建提示词
     const systemPrompt = `你是一个恋爱沟通技巧专家。请写一篇关于恋爱沟通技巧的文章。
 
@@ -27,14 +22,15 @@ export async function POST(request: NextRequest) {
   "content": "文章正文"
 }`;
 
-    // 调用 LLM 生成文章
-    const response = await client.invoke(
+    // 调用 AI 服务生成文章
+    const response = await aiService.invoke(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: '请写一篇关于恋爱沟通技巧的文章' },
       ],
       {
         temperature: 0.9,
+        timeout: 30000
       }
     );
 
@@ -70,8 +66,27 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ post: insertResult.rows[0] });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to generate article:', error);
+    
+    // 错误分类处理
+    if (error.type === 'AuthenticationError') {
+      return NextResponse.json(
+        { error: 'Authentication failed: Invalid API key' },
+        { status: 401 }
+      );
+    } else if (error.type === 'RateLimitError') {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded, please try again later' },
+        { status: 429 }
+      );
+    } else if (error.type === 'ServerError') {
+      return NextResponse.json(
+        { error: 'Server error, please try again later' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to generate article' },
       { status: 500 }
