@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 获取单篇文章详情
 export async function GET(
@@ -8,26 +8,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const client = getSupabaseClient();
     
-    const { data, error } = await client
-      .from('blog_posts')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    const result = await query(
+      'SELECT * FROM blog_posts WHERE id = $1',
+      [id]
+    );
 
-    if (error) {
-      throw new Error(`查询失败: ${error.message}`);
-    }
-
-    if (!data) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Article not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ post: data });
+    return NextResponse.json({ post: result.rows[0] });
   } catch (error) {
     console.error('Failed to fetch blog post:', error);
     return NextResponse.json(

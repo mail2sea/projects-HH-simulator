@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 注册
 export async function POST(request: NextRequest) {
@@ -30,16 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = getSupabaseClient();
-
     // 检查用户名是否已存在
-    const { data: existingUser } = await client
-      .from('users')
-      .select('id')
-      .eq('username', username)
-      .maybeSingle();
+    const existingUserResult = await query(
+      'SELECT id FROM users WHERE username = $1',
+      [username]
+    );
 
-    if (existingUser) {
+    if (existingUserResult.rows.length > 0) {
       return NextResponse.json(
         { error: '用户名已存在' },
         { status: 400 }
@@ -50,22 +47,18 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 创建用户
-    const { data, error } = await client
-      .from('users')
-      .insert({
-        username,
-        password: hashedPassword,
-      })
-      .select('id, username, created_at')
-      .single();
+    const insertResult = await query(
+      'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username, created_at',
+      [username, hashedPassword]
+    );
 
-    if (error) {
-      throw new Error(`注册失败: ${error.message}`);
+    if (insertResult.rows.length === 0) {
+      throw new Error('注册失败: 无法创建用户');
     }
 
     return NextResponse.json({
       success: true,
-      user: data,
+      user: insertResult.rows[0],
     });
   } catch (error) {
     console.error('Registration error:', error);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 登录
 export async function POST(request: NextRequest) {
@@ -16,25 +16,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = getSupabaseClient();
-
     // 查找用户
-    const { data: user, error } = await client
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .maybeSingle();
+    const userResult = await query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
 
-    if (error) {
-      throw new Error(`查询失败: ${error.message}`);
-    }
-
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return NextResponse.json(
         { error: '用户名或密码错误' },
         { status: 401 }
       );
     }
+
+    const user = userResult.rows[0];
 
     // 验证密码
     const isPasswordValid = await bcrypt.compare(password, user.password);

@@ -1,20 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 获取文章列表
 export async function GET() {
   try {
-    const client = getSupabaseClient();
-    const { data, error } = await client
-      .from('blog_posts')
-      .select('id, title, summary, tags, read_time, created_at')
-      .order('created_at', { ascending: false });
+    const result = await query(
+      'SELECT id, title, summary, tags, read_time, created_at FROM blog_posts ORDER BY created_at DESC'
+    );
 
-    if (error) {
-      throw new Error(`查询失败: ${error.message}`);
-    }
-
-    return NextResponse.json({ posts: data });
+    return NextResponse.json({ posts: result.rows });
   } catch (error) {
     console.error('Failed to fetch blog posts:', error);
     return NextResponse.json(

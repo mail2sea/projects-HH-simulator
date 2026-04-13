@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 获取游戏记录列表
 export async function GET(request: NextRequest) {
@@ -14,16 +14,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const client = getSupabaseClient();
-
     // 验证用户是否存在
-    const { data: user, error: userError } = await client
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
+    const userResult = await query(
+      'SELECT id FROM users WHERE id = $1',
+      [userId]
+    );
 
-    if (userError || !user) {
+    if (userResult.rows.length === 0) {
       return NextResponse.json(
         { error: '用户不存在' },
         { status: 404 }
@@ -31,19 +28,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取游戏记录
-    const { data, error } = await client
-      .from('game_records')
-      .select('id, scenario, final_score, result, played_at')
-      .eq('user_id', userId)
-      .order('played_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`获取游戏记录失败: ${error.message}`);
-    }
+    const recordsResult = await query(
+      'SELECT id, scenario, final_score, result, played_at FROM game_records WHERE user_id = $1 ORDER BY played_at DESC',
+      [userId]
+    );
 
     return NextResponse.json({
       success: true,
-      records: data || [],
+      records: recordsResult.rows || [],
     });
   } catch (error) {
     console.error('Get game records error:', error);
@@ -75,16 +67,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = getSupabaseClient();
-
     // 验证用户是否存在
-    const { data: user, error: userError } = await client
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
+    const userResult = await query(
+      'SELECT id FROM users WHERE id = $1',
+      [userId]
+    );
 
-    if (userError || !user) {
+    if (userResult.rows.length === 0) {
       return NextResponse.json(
         { error: '用户不存在' },
         { status: 404 }
@@ -92,24 +81,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 插入游戏记录
-    const { data, error } = await client
-      .from('game_records')
-      .insert({
-        user_id: userId,
-        scenario,
-        final_score: finalScore,
-        result,
-      })
-      .select('id, user_id, scenario, final_score, result, played_at')
-      .single();
+    const insertResult = await query(
+      'INSERT INTO game_records (user_id, scenario, final_score, result) VALUES ($1, $2, $3, $4) RETURNING id, user_id, scenario, final_score, result, played_at',
+      [userId, scenario, finalScore, result]
+    );
 
-    if (error) {
-      throw new Error(`保存游戏记录失败: ${error.message}`);
+    if (insertResult.rows.length === 0) {
+      throw new Error('保存游戏记录失败: 无法创建记录');
     }
 
     return NextResponse.json({
       success: true,
-      record: data,
+      record: insertResult.rows[0],
     });
   } catch (error) {
     console.error('Save game record error:', error);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { query } from '@/storage/database/postgres-client';
 
 // 生成新文章
 export async function POST(request: NextRequest) {
@@ -54,24 +54,22 @@ export async function POST(request: NextRequest) {
     const articleData = JSON.parse(content);
 
     // 保存到数据库
-    const supabaseClient = getSupabaseClient();
-    const { data, error } = await supabaseClient
-      .from('blog_posts')
-      .insert({
-        title: articleData.title,
-        summary: articleData.summary,
-        content: articleData.content,
-        tags: JSON.stringify(['恋爱技巧', '沟通']),
-        read_time: Math.ceil(articleData.content.length / 150),
-      })
-      .select()
-      .single();
+    const insertResult = await query(
+      'INSERT INTO blog_posts (title, summary, content, tags, read_time) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [
+        articleData.title,
+        articleData.summary,
+        articleData.content,
+        JSON.stringify(['恋爱技巧', '沟通']),
+        Math.ceil(articleData.content.length / 150),
+      ]
+    );
 
-    if (error) {
-      throw new Error(`保存失败: ${error.message}`);
+    if (insertResult.rows.length === 0) {
+      throw new Error('保存失败: 无法创建文章');
     }
 
-    return NextResponse.json({ post: data });
+    return NextResponse.json({ post: insertResult.rows[0] });
   } catch (error) {
     console.error('Failed to generate article:', error);
     return NextResponse.json(
