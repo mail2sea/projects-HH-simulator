@@ -125,6 +125,15 @@ export default function GameScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // 当audioUri更新时，更新音频对象的src
+  useEffect(() => {
+    if (audioUri && audioRef.current) {
+      audioRef.current.src = audioUri;
+      // 重置播放状态
+      setIsPlaying(false);
+    }
+  }, [audioUri]);
+
   // 处理选择选项
   const handleSelectOption = async (option: Option) => {
     // 重置语音
