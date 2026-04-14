@@ -15,9 +15,9 @@ async function testBlogReading() {
       return;
     }
     
-    console.log(`✓ Found ${allPostsResult.rows.length} blog posts:`);
-    allPostsResult.rows.forEach((post, index) => {
-      console.log(`  ${index + 1}. ${post.title} (${post.created_at})`);
+    console.log(`✓ Found ${allPostsResult.rows.length} blog posts:`);    
+    allPostsResult.rows.forEach((post: any, index: number) => {
+      console.log(`  ${index + 1}. ${post.title} (${post.created_at})`); 
     });
     
     // 测试读取单篇博客文章的详细信息

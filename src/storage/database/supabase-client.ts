@@ -112,9 +112,9 @@ function getSupabaseClient(token?: string): SupabaseClient {
   // 尝试使用不同的 SSL 配置
   const supabaseOptions = {
     global: {
-      fetch: (url, options) => {
-        console.log('Fetching:', url);
-        return fetch(url, options).catch(error => {
+      fetch: (input: URL | RequestInfo, init?: RequestInit) => {
+        console.log('Fetching:', input);
+        return fetch(input, init).catch(error => {
           console.error('Fetch error:', error);
           throw error;
         });
