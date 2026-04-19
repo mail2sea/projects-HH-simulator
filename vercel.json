@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm install --prefer-frozen-lockfile && pnpm build",
-  "installCommand": "pnpm install --prefer-frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "installCommand": "echo 'Skipping install, build.sh will handle it'",
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
