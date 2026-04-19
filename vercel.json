@@ -1,0 +1,12 @@
+{
+  "buildCommand": "pnpm install --prefer-frozen-lockfile && pnpm build",
+  "installCommand": "pnpm install --prefer-frozen-lockfile",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "cacheFrom": ["pnpm-store"],
+  "cacheTo": "pnpm-store",
+  "env": {
+    "NODE_VERSION": "20",
+    "PNPM_VERSION": "9.0.0"
+  }
+}
