@@ -78,10 +78,10 @@
     "@react-dev-inspector/middleware": "^2.0.1",
     "react-dev-inspector": "^2.0.1",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "@types/bcrypt": "^6.0.0"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/pg": "^8.16.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
