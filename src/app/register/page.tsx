@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -17,7 +19,6 @@ export default function RegisterPage() {
     setError('');
     setIsLoading(true);
 
-    // 前端验证
     if (username.length < 3) {
       setError('用户名至少 3 个字符');
       setIsLoading(false);
@@ -30,7 +31,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const result = await register(username, password);
+    const result = await register(username, password, turnstileToken);
 
     if (result.success) {
       router.push('/');
@@ -44,7 +45,6 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-purple-50 px-4">
       <div className="w-full max-w-md">
-        {/* 标题卡片 */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">欢迎加入</h1>
@@ -97,6 +97,13 @@ export default function RegisterPage() {
               />
               <p className="mt-1 text-xs text-gray-400">至少 6 个字符</p>
             </div>
+
+            <Turnstile
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => {
+                setTurnstileToken(token);
+              }}
+            />
 
             <button
               type="submit"

@@ -2,28 +2,23 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// 用户类型
 export interface User {
   id: number;
   username: string;
   created_at: string;
 }
 
-// 认证上下文类型
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, password: string, turnstileToken?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
-// 创建认证上下文
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider 组件
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // 初始化时读取用户信息
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -38,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  // 登录
   const login = async (username: string, password: string) => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -62,13 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 注册
-  const register = async (username: string, password: string) => {
+  const register = async (username: string, password: string, turnstileToken?: string) => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, turnstileToken }),
       });
 
       const data = await response.json();
@@ -86,7 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 登出
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -99,7 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

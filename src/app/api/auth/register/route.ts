@@ -2,11 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import { query } from '@/storage/database/postgres-client';
 
-// 注册
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { turnstileToken, username, password } = body;
+
+    // 去 Cloudflare 验证 Turnstile token
+    const verifyResponse = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: process.env.TURNSTILE_SECRET_KEY,
+          response: turnstileToken,
+        }),
+      }
+    );
+
+    const verifyResult = await verifyResponse.json();
+
+    // 如果验证失败，直接拒绝
+    if (!verifyResult.success) {
+      return NextResponse.json(
+        { error: '人机验证失败，请重试' },
+        { status: 403 }
+      );
+    }
 
     // 验证输入
     if (!username || !password) {
