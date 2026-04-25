@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import { query } from '@/storage/database/postgres-client';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,9 +79,17 @@ export async function POST(request: NextRequest) {
       throw new Error('注册失败: 无法创建用户');
     }
 
+    const user = insertResult.rows[0];
+
+    try {
+      await sendWelcomeEmail(user.username, user.username);
+    } catch (error) {
+      console.error('欢迎邮件发送失败：', error);
+    }
+
     return NextResponse.json({
       success: true,
-      user: insertResult.rows[0],
+      user,
     });
   } catch (error) {
     console.error('Registration error:', error);
