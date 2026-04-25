@@ -1,5 +1,11 @@
 import { query } from '../src/storage/database/postgres-client';
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
 async function addEmailColumn() {
   try {
     // 添加 email 字段（如果不存在）
@@ -13,7 +19,7 @@ async function addEmailColumn() {
     // 验证结果
     const usersResult = await query('SELECT id, username, email FROM users LIMIT 5');
     console.log('\n📋 验证用户数据：');
-    usersResult.rows.forEach(user => {
+    (usersResult.rows as User[]).forEach(user => {
       console.log(`  ID: ${user.id}, Username: ${user.username}, Email: ${user.email}`);
     });
     
