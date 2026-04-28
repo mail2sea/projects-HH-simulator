@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import CrispChat from '@/components/crisp-chat';
 
 export const metadata: Metadata = {
   title: {
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className={`antialiased`}>
         {isDev && <Inspector />}
         <AuthProvider>{children}</AuthProvider>
+        <CrispChat />
       </body>
     </html>
   );
